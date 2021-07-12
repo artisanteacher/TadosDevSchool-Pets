@@ -1,19 +1,22 @@
 ﻿namespace Pets.Domain.ValueObjects
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using global::Domain.Abstractions;
     using Entities;
 
+    [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression")]
+    [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
     public class Feeding : IValueObjectWithId
     {
         [Obsolete("Only for reflection", true)]
         public Feeding()
         {
         }
-        
+
         protected internal Feeding(DateTime dateTimeUtc, Food food, int count)
         {
-            if (count < 0) 
+            if (count <= 0)
                 throw new ArgumentOutOfRangeException(nameof(count));
 
             DateTimeUtc = dateTimeUtc;
@@ -21,20 +24,14 @@
             Count = count;
         }
 
-        public Feeding(long id, DateTime dateTimeUtc, Food food, int count)
-            : this(dateTimeUtc, food, count)
-        {
-            Id = id;
-        }
 
 
+        public virtual long Id { get; protected set; }
 
-        public long Id { get; set; }
+        public virtual DateTime DateTimeUtc { get; protected set; }
 
-        public DateTime DateTimeUtc { get; init; }
+        public virtual Food Food { get; protected set; }
 
-        public Food Food { get; init; }
-
-        public int Count { get; init; }
+        public virtual int Count { get; protected set; }
     }
 }

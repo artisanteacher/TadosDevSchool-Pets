@@ -1,9 +1,12 @@
 ﻿namespace Pets.Domain.Entities
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using global::Domain.Abstractions;
     using Enums;
 
+    [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression")]
+    [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
     public class Breed : IEntity
     {
         [Obsolete("Only for reflection", true)]
@@ -20,18 +23,12 @@
             Name = name;
         }
 
-        public Breed(long id, AnimalType animalType, string name)
-            : this(animalType, name)
-        {
-            Id = id;
-        }
 
 
+        public virtual long Id { get; protected set; }
 
-        public long Id { get; set; }
+        public virtual AnimalType AnimalType { get; protected set; }
 
-        public AnimalType AnimalType { get; protected set; }
-
-        public string Name { get; protected set; }
+        public virtual string Name { get; protected set; }
     }
 }

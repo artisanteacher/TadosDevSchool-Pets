@@ -2,21 +2,27 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Common.DataAnnotations;
     using global::Domain.Abstractions;
     using Enums;
     using ValueObjects;
 
-    public abstract class Animal : IEntity
+    [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression")]
+    [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
+    public class Animal : IEntity
     {
-        private readonly ISet<Feeding> _feedings = new HashSet<Feeding>();
+        private readonly ICollection<Feeding> _feedings = new HashSet<Feeding>();
+
+
 
         [Obsolete("Only for reflection", true)]
-        protected Animal()
+        public Animal()
         {
         }
 
-        protected Animal(AnimalType type, string name, Breed breed)
+        protected Animal(AnimalType type, string name, Breed breed, Food favoriteFood)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
@@ -30,37 +36,37 @@
             Type = type;
             Name = name;
             Breed = breed;
+            SetFavoriteFood(favoriteFood);
         }
 
-        protected Animal(long id, AnimalType type, string name, Breed breed, IEnumerable<Feeding> feedings)
-            : this(type, name, breed)
+
+
+        public virtual long Id { get; protected set; }
+
+        public virtual AnimalType Type { get; protected set; }
+
+        public virtual string Name { get; protected set; }
+
+        public virtual Breed Breed { get; protected set; }
+
+        [Nullable]
+        public virtual Food FavoriteFood { get; protected set; }
+
+        public virtual IEnumerable<Feeding> Feedings => _feedings;
+
+        public virtual IEnumerable<Feeding> OrderedFeedings => _feedings.AsQueryable().OrderByDescending(x => x.DateTimeUtc);
+
+
+
+        public virtual void SetFavoriteFood(Food food)
         {
-            if (feedings == null) 
-                throw new ArgumentNullException(nameof(feedings));
-        
-            Id = id;
-        
-            foreach (var feeding in feedings)
-            {
-                _feedings.Add(feeding);
-            }
+            if (food is not null && food.AnimalType != Type)
+                throw new ArgumentException($"Food animal type expected to be {Type}", nameof(food));
+
+            FavoriteFood = food;
         }
 
-
-
-        public long Id { get; set; }
-
-        public AnimalType Type { get; init; }
-
-        public string Name { get; init; }
-
-        public Breed Breed { get; init; }
-
-        public IEnumerable<Feeding> Feedings => _feedings.AsEnumerable();
-
-
-
-        protected internal Feeding Feed(Food food, int count)
+        protected internal virtual void Feed(Food food, int count)
         {
             if (food == null) 
                 throw new ArgumentNullException(nameof(food));
@@ -71,11 +77,9 @@
             if (food.AnimalType != Type)
                 throw new ArgumentException($"Food animal type expected to be {Type}", nameof(food));
 
-            Feeding feeding = new Feeding(DateTime.UtcNow, food, count);
+            var feeding = new Feeding(DateTime.UtcNow, food, count);
             
             _feedings.Add(feeding);
-
-            return feeding;
         }
     }
 }

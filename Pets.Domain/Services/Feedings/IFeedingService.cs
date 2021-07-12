@@ -5,9 +5,12 @@
     using Entities;
     using global::Domain.Abstractions;
 
-
     public interface IFeedingService : IDomainService
     {
-        Task FeedAsync(Animal animal, Food food, int count, CancellationToken cancellationToken = default);
+        Task FeedAsync(
+            Animal animal, 
+            Food food, 
+            int count, 
+            CancellationToken cancellationToken = default);
     }
 }

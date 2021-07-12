@@ -1,26 +1,32 @@
 ﻿namespace Pets.Domain.Services.Feedings
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Commands.Contexts;
+    using Criteria;
     using Entities;
     using Exceptions;
-    using global::Commands.Abstractions;
-    using ValueObjects;
+    using Queries.Abstractions;
 
     public class FeedingService : IFeedingService
     {
-        private readonly IAsyncCommandBuilder _commandBuilder;
+        private readonly IAsyncQueryBuilder _asyncQueryBuilder;
 
 
-        public FeedingService(IAsyncCommandBuilder commandBuilder)
+
+        public FeedingService(IAsyncQueryBuilder asyncQueryBuilder)
         {
-            _commandBuilder = commandBuilder ?? throw new ArgumentNullException(nameof(commandBuilder));
+            _asyncQueryBuilder = asyncQueryBuilder ?? throw new ArgumentNullException(nameof(asyncQueryBuilder));
         }
 
 
-        public async Task FeedAsync(Animal animal, Food food, int count, CancellationToken cancellationToken = default)
+
+        public async Task FeedAsync(
+            Animal animal, 
+            Food food, 
+            int count,
+            CancellationToken cancellationToken = default)
         {
             if (animal == null)
                 throw new ArgumentNullException(nameof(animal));
@@ -28,20 +34,21 @@
             if (food == null)
                 throw new ArgumentNullException(nameof(food));
 
-            if (count < 0)
+            if (count <= 0)
                 throw new ArgumentOutOfRangeException(nameof(count));
 
             if (food.Count < count)
                 throw new NotEnoughFoodException();
 
-            if (food.AnimalType != animal.Type)
-                throw new InvalidOperationException("Selected food can't be used for animal");
+            FeedLimit feedLimit = await _asyncQueryBuilder
+                .For<FeedLimit>()
+                .WithAsync(new FindByBreed(animal.Breed), cancellationToken);
 
-            Feeding feeding = animal.Feed(food, count);
+            if (animal.Feedings.Count() >= feedLimit?.MaxPerDay)
+                throw new FeedLimitExceededException();
+
+            animal.Feed(food, count);
             food.Decrease(count);
-
-            await _commandBuilder.ExecuteAsync(new UpdateFoodCommandContext(food), cancellationToken);
-            await _commandBuilder.ExecuteAsync(new CreateFeedingCommandContext(animal, feeding), cancellationToken);
         }
     }
 }
